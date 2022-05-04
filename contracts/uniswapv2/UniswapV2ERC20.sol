@@ -2,7 +2,7 @@
 
 pragma solidity =0.6.12;
 
-import './libraries/SafeMath.sol';
+import './libraries/SafeMath.sol'; //* OK
 
 contract UniswapV2ERC20 {
     using SafeMathUniswap for uint;
@@ -12,7 +12,7 @@ contract UniswapV2ERC20 {
     uint8 public constant decimals = 18;
     uint  public totalSupply;
     mapping(address => uint) public balanceOf;
-    mapping(address => mapping(address => uint)) public allowance;
+    mapping(address => mapping(address => uint)) public allowance; // allow someone to spend token
 
     bytes32 public DOMAIN_SEPARATOR;
     // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
@@ -38,40 +38,48 @@ contract UniswapV2ERC20 {
         );
     }
 
+    //* mint token to
     function _mint(address to, uint value) internal {
         totalSupply = totalSupply.add(value);
         balanceOf[to] = balanceOf[to].add(value);
         emit Transfer(address(0), to, value);
     }
 
+    //* minus value(token) from `balanceOf`
     function _burn(address from, uint value) internal {
         balanceOf[from] = balanceOf[from].sub(value);
         totalSupply = totalSupply.sub(value);
         emit Transfer(from, address(0), value);
     }
 
+    //* allow token values to spender
     function _approve(address owner, address spender, uint value) private {
         allowance[owner][spender] = value;
         emit Approval(owner, spender, value);
     }
 
-    function _transfer(address from, address to, uint value) private {
+    //* Transfer token from `from` to `to`
+    function _transfer(address from, address to, uint value) private { //@audit require balance >= value
         balanceOf[from] = balanceOf[from].sub(value);
         balanceOf[to] = balanceOf[to].add(value);
         emit Transfer(from, to, value);
     }
 
-    function approve(address spender, uint value) external returns (bool) {
+    //* approve spend amount for spender
+    function approve(address spender, uint value) external returns (bool) { //@audit noReentrancy : no callback
         _approve(msg.sender, spender, value);
         return true;
     }
 
-    function transfer(address to, uint value) external returns (bool) {
+    //* transfer token of `caller` to `to`
+    //? Caller require permission
+    function transfer(address to, uint value) external returns (bool) { //@audit noReentrancy : no callback
         _transfer(msg.sender, to, value);
         return true;
     }
 
-    function transferFrom(address from, address to, uint value) external returns (bool) {
+    //* transfer token from `from` to `to`
+    function transferFrom(address from, address to, uint value) external returns (bool) { //@audit msg.sender must be token owner or operator?
         if (allowance[from][msg.sender] != uint(-1)) {
             allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);
         }
@@ -79,6 +87,8 @@ contract UniswapV2ERC20 {
         return true;
     }
 
+    //* permit `spender` of an `owner` with amount and deadline
+    //? Complicated function
     function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external {
         require(deadline >= block.timestamp, 'UniswapV2: EXPIRED');
         bytes32 digest = keccak256(
