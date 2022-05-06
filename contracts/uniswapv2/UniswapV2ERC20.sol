@@ -38,48 +38,41 @@ contract UniswapV2ERC20 {
         );
     }
 
-    //* mint token to
-    function _mint(address to, uint value) internal {
+    function _mint(address to, uint value) internal { //* mint token to
         totalSupply = totalSupply.add(value);
         balanceOf[to] = balanceOf[to].add(value);
         emit Transfer(address(0), to, value);
     }
 
-    //* minus value(token) from `balanceOf`
-    function _burn(address from, uint value) internal {
+    function _burn(address from, uint value) internal { //* minus value(token) from `balanceOf`
         balanceOf[from] = balanceOf[from].sub(value);
         totalSupply = totalSupply.sub(value);
         emit Transfer(from, address(0), value);
     }
 
-    //* allow token values to spender
-    function _approve(address owner, address spender, uint value) private {
+    function _approve(address owner, address spender, uint value) private { //* allow token values to spender
         allowance[owner][spender] = value;
         emit Approval(owner, spender, value);
     }
 
-    //* Transfer token from `from` to `to`
-    function _transfer(address from, address to, uint value) private { //@audit require balance >= value
+    function _transfer(address from, address to, uint value) private { //* Transfer token from `from` to `to` @audit require balance >= value
         balanceOf[from] = balanceOf[from].sub(value);
         balanceOf[to] = balanceOf[to].add(value);
         emit Transfer(from, to, value);
     }
 
-    //* approve spend amount for spender
-    function approve(address spender, uint value) external returns (bool) { //@audit noReentrancy : no callback
+    function approve(address spender, uint value) external returns (bool) { //* approve spend amount for spender @audit noReentrancy : no callback
         _approve(msg.sender, spender, value);
         return true;
     }
 
-    //* transfer token of `caller` to `to`
     //? Caller require permission
-    function transfer(address to, uint value) external returns (bool) { //@audit noReentrancy : no callback
+    function transfer(address to, uint value) external returns (bool) { //* transfer token of `caller` to `to` @audit noReentrancy : no callback
         _transfer(msg.sender, to, value);
         return true;
     }
 
-    //* transfer token from `from` to `to`
-    function transferFrom(address from, address to, uint value) external returns (bool) { //@audit msg.sender must be token owner or operator?
+    function transferFrom(address from, address to, uint value) external returns (bool) { //* transfer token from `from` to `to` @audit msg.sender must be token owner or operator?
         if (allowance[from][msg.sender] != uint(-1)) {
             allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);
         }
@@ -87,9 +80,7 @@ contract UniswapV2ERC20 {
         return true;
     }
 
-    //* permit `spender` of an `owner` with amount and deadline
-    //? Complicated function
-    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external {
+    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external { //* permit `spender` of an `owner` with amount and deadline //? Complicated function
         require(deadline >= block.timestamp, 'UniswapV2: EXPIRED');
         bytes32 digest = keccak256(
             abi.encodePacked(
